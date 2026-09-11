@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="tileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4CAF50"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#tileGrad)"/>
+  <!-- Base de asta de bandera -->
+  <path d="M22 48h20v-4H22v4z" fill="#3E2723" filter="url(#dropShadow)"/>
+  <rect x="29" y="16" width="4" height="28" rx="2" fill="#ECEFF1"/>
+  <!-- Banderín rojo triangular -->
+  <path d="M33 16l19 9-19 9V16z" fill="#E53935" filter="url(#dropShadow)"/>
+  <circle cx="31" cy="16" r="3" fill="#FFD54F"/>
+</svg>

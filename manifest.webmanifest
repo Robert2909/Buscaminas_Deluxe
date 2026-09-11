@@ -1,0 +1,21 @@
+{
+  "name": "Buscaminas Deluxe",
+  "short_name": "Buscaminas",
+  "description": "El clásico Buscaminas con 8 temas visuales, audio sintetizado procedural, interfaz ultra-responsiva y estadísticas avanzadas.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#4a752c",
+  "theme_color": "#4a752c",
+  "lang": "es",
+  "categories": ["games", "puzzle"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

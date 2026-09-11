@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Buscaminas Deluxe</title>
+    <meta name="description"
+        content="Juego de Buscaminas web de alta calidad con animación fluida, sonido Web Audio API, estética estilo Google y múltiples temas personalizables.">
+    <meta name="theme-color" id="meta-theme-color" content="#4a752c">
+    
+    <!-- PWA & Iconos -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
+    
+    <!-- Soporte Web App iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Buscaminas Deluxe">
+
+    <!-- Open Graph & Social Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Buscaminas Deluxe">
+    <meta property="og:description"
+        content="El clásico Buscaminas reinventado: 8 temas visuales adaptativos, audio procedural sintetizado, tablero ultra-responsivo y estadísticas avanzadas.">
+    <meta property="og:image" content="favicon.svg">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Buscaminas Deluxe">
+    <meta name="twitter:description"
+        content="El clásico Buscaminas reinventado: 8 temas visuales adaptativos, audio procedural sintetizado, tablero ultra-responsivo y estadísticas avanzadas.">
+    <meta name="twitter:image" content="favicon.svg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="theme-google-garden">
+
+    <div class="game-wrapper">
+        <!-- Barra 1: Barra Superior Unificada (Marca, Selector de Dificultad y Acciones) -->
+        <header class="top-navbar">
+            <div class="brand-title">Buscaminas Deluxe</div>
+
+            <!-- Selector de Dificultad Compacto Integrado en la Barra Superior -->
+            <nav class="presets-bar" aria-label="Niveles de dificultad">
+                <button class="preset-tab active" data-preset="easy">Fácil (10×8)</button>
+                <button class="preset-tab" data-preset="medium">Intermedio (18×14)</button>
+                <button class="preset-tab" data-preset="hard">Difícil (24×20)</button>
+                <button class="preset-tab" data-preset="expert">Extra Difícil (28×22)</button>
+                <button class="preset-tab" data-preset="legendary">Legendario (32×24)</button>
+                <button class="preset-tab" data-preset="impossible">Imposible (36×26)</button>
+                <button class="preset-tab" data-preset="custom">Personalizado</button>
+            </nav>
+
+            <nav class="nav-actions">
+                <button id="fullscreen-btn" class="btn-icon" title="Pantalla Completa (F)"
+                    aria-label="Alternar pantalla completa">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                    </svg>
+                </button>
+                <button id="sound-toggle-btn" class="btn-icon" title="Sonido (M)" aria-label="Alternar sonido">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                    </svg>
+                </button>
+                <button id="stats-btn" class="btn-icon" title="Estadísticas y Récords" aria-label="Ver estadísticas">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                </button>
+                <button id="theme-btn" class="btn-icon" title="Temas Visuales (T)" aria-label="Cambiar tema visual">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                        <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                        <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                        <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                        <path
+                            d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.23-.13-.37 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z" />
+                    </svg>
+                </button>
+                <button id="settings-btn" class="btn-icon" title="Configuración y Ajustes (Tab)"
+                    aria-label="Abrir configuración">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                </button>
+                <button id="help-btn" class="btn-icon" title="Cómo Jugar y Atajos" aria-label="Ayuda">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Consola Principal del Juego -->
+        <main class="game-console">
+            <!-- Barra 2: Encabezado HUD Unificado (Modo Pala/Bandera, Banderas, Carita, Cronómetro) -->
+            <header class="hud-header">
+                <div class="hud-left-group">
+                    <button id="mode-toggle-btn" class="mode-toggle-btn"
+                        title="Alternar entre Cavar y Colocar Bandera (Espacio)">
+                        <span class="mode-icon">
+                            <svg class="mode-icon-svg mode-icon-shovel" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M 2 22 C 2 16, 4 12, 6.5 9.5 L 13.5 16.5 C 12 19, 8 22, 2 22 Z" fill="currentColor" fill-opacity="0.3" />
+                                <line x1="3.5" y1="20.5" x2="8" y2="16" stroke-width="1.3" opacity="0.65" />
+                                <line x1="10" y1="13" x2="15.5" y2="7.5" stroke-width="2.2" />
+                                <path d="M 14 6 L 16.5 3.5 C 17.5 2.5, 19.5 2.5, 20.5 3.5 C 21.5 4.5, 21.5 6.5, 20.5 7.5 L 17 10" stroke-width="1.8" />
+                                <line x1="14" y1="6" x2="17" y2="9" stroke-width="2" />
+                            </svg>
+                        </span>
+                        <span class="mode-label">Pala</span>
+                    </button>
+
+                    <button id="undo-btn" class="btn-pill-action hidden" title="Deshacer explosión (Modo Práctica)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 7v6h6" />
+                            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                        </svg>
+                        <span>Deshacer</span>
+                    </button>
+
+                    <div class="hud-counter-box" title="Minas restantes">
+                        <span class="counter-icon">
+                            <svg class="hud-icon-svg" viewBox="0 0 24 24" fill="none">
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="#E53935" />
+                                <line x1="4" y1="22" x2="4" y2="15" stroke="#795548" stroke-width="2.2"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </span>
+                        <div id="mines-display" class="stat-counter">010</div>
+                    </div>
+                </div>
+
+                <div class="hud-center-group">
+                    <button id="face-btn" class="face-btn state-ready" title="Reiniciar partida"
+                        aria-label="Reiniciar partida">
+                        <span class="face-svg-wrapper"></span>
+                    </button>
+                </div>
+
+                <div class="hud-right-group">
+                    <div class="hud-counter-box" title="Tiempo transcurrido (segundos)">
+                        <span class="counter-icon">
+                            <svg class="hud-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        </span>
+                        <div id="timer-display" class="stat-counter">000</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Contenedor y Viewport del Tablero -->
+            <section id="board-viewport">
+                <div id="board-container">
+                    <div id="game-board" role="grid" aria-label="Tablero de Buscaminas"></div>
+                </div>
+
+                <!-- Mini Menú Emergente de Fin de Partida (Derrota / Victoria) -->
+                <div id="endgame-popup" class="endgame-popup hidden" role="dialog" aria-modal="false"
+                    aria-labelledby="endgame-title">
+                    <div class="endgame-card">
+                        <div class="endgame-header">
+                            <div class="endgame-badge-chip">
+                                <span class="endgame-type-pill" id="endgame-type-pill">Victoria</span>
+                                <span class="endgame-preset-pill" id="endgame-preset-pill">Intermedio</span>
+                            </div>
+                            <button id="endgame-close-btn" class="endgame-close-btn"
+                                title="Inspeccionar tablero (Escape)" aria-label="Cerrar ventana">&times;</button>
+                        </div>
+                        <div class="endgame-body">
+                            <div class="endgame-hero-icon" id="endgame-hero-icon"></div>
+                            <div class="endgame-title-group">
+                                <h3 id="endgame-title" class="endgame-title">¡Victoria!</h3>
+                            </div>
+                            <div class="endgame-stats-grid">
+                                <div class="endgame-stat-box" id="stat-box-time">
+                                    <span class="endgame-stat-label">Tiempo</span>
+                                    <strong class="endgame-stat-value" id="endgame-stat-time">000s</strong>
+                                    <span class="endgame-record-tag hidden" id="endgame-record-tag">¡Récord!</span>
+                                </div>
+                                <div class="endgame-stat-box" id="stat-box-cleared">
+                                    <span class="endgame-stat-label">Despejado</span>
+                                    <strong class="endgame-stat-value" id="endgame-stat-cleared">100%</strong>
+                                    <span class="endgame-stat-sub" id="endgame-stat-cleared-count">0/0</span>
+                                </div>
+                                <div class="endgame-stat-box" id="stat-box-flags">
+                                    <span class="endgame-stat-label">Banderas</span>
+                                    <strong class="endgame-stat-value" id="endgame-stat-flags">0 / 0</strong>
+                                    <span class="endgame-stat-sub" id="endgame-stat-accuracy">100% acierto</span>
+                                </div>
+                                <div class="endgame-stat-box" id="stat-box-rate">
+                                    <span class="endgame-stat-label">Ritmo</span>
+                                    <strong class="endgame-stat-value" id="endgame-stat-rate">0.0/s</strong>
+                                    <span class="endgame-stat-sub">casillas/seg</span>
+                                </div>
+                            </div>
+                            <div id="endgame-progress-wrap" class="endgame-progress-wrap hidden">
+                                <div class="endgame-progress-info">
+                                    <span>Progreso del campo:</span>
+                                    <strong id="endgame-progress-pct">0%</strong>
+                                </div>
+                                <div class="endgame-progress-bar">
+                                    <div id="endgame-progress-fill" class="endgame-progress-fill" style="width: 0%;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="endgame-actions">
+                                <button id="endgame-restart-btn" class="endgame-btn btn-action-primary">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="23 4 23 10 17 10" />
+                                        <polyline points="1 20 1 14 7 14" />
+                                        <path
+                                            d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                                    </svg>
+                                    <span>Jugar de Nuevo</span>
+                                </button>
+                                <div class="endgame-secondary-actions">
+                                    <button id="endgame-inspect-btn" class="endgame-btn btn-action-secondary"
+                                        title="Ver el tablero despejado (Escape)">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                        <span>Ver Tablero</span>
+                                    </button>
+                                    <button id="endgame-copy-btn" class="endgame-btn btn-action-secondary"
+                                        title="Copiar resumen de la partida">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                        </svg>
+                                        <span id="endgame-copy-text">Copiar</span>
+                                    </button>
+                                    <button id="endgame-undo-btn" class="endgame-btn btn-action-undo hidden"
+                                        title="Deshacer explosión (Modo Práctica)">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M3 7v6h6" />
+                                            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                                        </svg>
+                                        <span>Deshacer</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón flotante para reabrir resumen al inspeccionar el tablero -->
+                <button id="reopen-endgame-btn" class="reopen-endgame-btn hidden" title="Ver resumen de la partida">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <span id="reopen-btn-text">Ver Resumen</span>
+                </button>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Configuración y Temas -->
+    <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="settings-title">Personalización & Ajustes</h3>
+                <button class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: -4px;">
+                    <label style="font-weight: 700;">Temas Visuales</label>
+                    <span style="font-size: 0.76rem; color: var(--modal-text-muted, #94a3b8); font-weight: 600;">8 Estilos Disponibles</span>
+                </div>
+                <div class="theme-selector-grid" id="theme-selector-grid">
+                    <div class="theme-option" data-theme="corporate-pro">
+                        <div class="theme-preview"
+                            style="background: linear-gradient(135deg, #ffffff 50%, #f1f5f9 50%); border: 2px solid #2563eb; box-shadow: 0 2px 6px rgba(37,99,235,0.3);"></div>
+                        <span class="theme-label">Corporate Pro</span>
+                    </div>
+                    <div class="theme-option active" data-theme="google-garden">
+                        <div class="theme-preview"
+                            style="background: linear-gradient(135deg, #a2d149 50%, #e5c29f 50%);"></div>
+                        <span class="theme-label">Google Garden</span>
+                    </div>
+                    <div class="theme-option" data-theme="vscode">
+                        <div class="theme-preview" style="background: #181818; border: 2px solid #007acc;"></div>
+                        <span class="theme-label">VS Code</span>
+                    </div>
+                    <div class="theme-option" data-theme="retro95">
+                        <div class="theme-preview" style="background: #c0c0c0; border: 2px solid #000080;"></div>
+                        <span class="theme-label">Windows 95</span>
+                    </div>
+                    <div class="theme-option" data-theme="cyberpunk-neon">
+                        <div class="theme-preview" style="background: #030712; border: 2px solid #00f0ff;"></div>
+                        <span class="theme-label">Cyberpunk</span>
+                    </div>
+                    <div class="theme-option" data-theme="dark-glass">
+                        <div class="theme-preview"
+                            style="background: #1e1b4b; border: 2px solid rgba(255,255,255,0.3);"></div>
+                        <span class="theme-label">Dark Glass</span>
+                    </div>
+                    <div class="theme-option" data-theme="sunset-desert">
+                        <div class="theme-preview"
+                            style="background: linear-gradient(135deg, #e2a856 50%, #eed9b8 50%);"></div>
+                        <span class="theme-label">Sunset Desert</span>
+                    </div>
+                    <div class="theme-option" data-theme="nordic-frost">
+                        <div class="theme-preview"
+                            style="background: linear-gradient(135deg, #0284c7 50%, #e0f2fe 50%); border: 2px solid #38bdf8; box-shadow: 0 2px 6px rgba(56,189,248,0.35);"></div>
+                        <span class="theme-label">Nordic Frost</span>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="setting-volume">
+                        Volumen de Sonido
+                        <small class="setting-desc">Ajusta los efectos acústicos del juego</small>
+                    </label>
+                    <div class="setting-slider-wrap">
+                        <input type="range" id="setting-volume" min="0" max="100" value="60">
+                        <span id="volume-val" class="setting-slider-val">60%</span>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="setting-practice-mode">
+                        Modo Práctica
+                        <small class="setting-desc">Permite deshacer la última explosión</small>
+                    </label>
+                    <input type="checkbox" id="setting-practice-mode">
+                </div>
+
+                <div class="setting-row">
+                    <label for="setting-questions">
+                        Habilitar Signos '?'
+                        <small class="setting-desc">Ciclo: Bandera &rarr; ? &rarr; Vacío</small>
+                    </label>
+                    <input type="checkbox" id="setting-questions">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Estadísticas -->
+    <div id="stats-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="stats-title">Récords & Estadísticas</h3>
+                <button class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body" id="stats-content">
+                <!-- Se llena dinámicamente con JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Nivel Personalizado -->
+    <div id="custom-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="custom-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-box custom-modal-box">
+            <div class="modal-header">
+                <h3 id="custom-title">Tablero Personalizado</h3>
+                <button class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Plantillas Rápidas -->
+                <div class="custom-field-title">Plantillas Rápidas</div>
+                <div class="custom-templates-grid">
+                    <button type="button" class="template-chip" data-rows="9" data-cols="9" data-mines="10">9×9 · 10
+                        minas</button>
+                    <button type="button" class="template-chip" data-rows="16" data-cols="16" data-mines="40">16×16 · 40
+                        minas</button>
+                    <button type="button" class="template-chip" data-rows="16" data-cols="30" data-mines="99">30×16 · 99
+                        minas</button>
+                    <button type="button" class="template-chip" data-rows="18" data-cols="34"
+                        data-mines="125">Panorámico (34×18)</button>
+                    <button type="button" class="template-chip" data-rows="25" data-cols="25" data-mines="150">Campo
+                        Denso (25×25)</button>
+                </div>
+
+                <!-- Sliders e Inputs Numéricos Sincronizados -->
+                <div class="custom-inputs-stack">
+                    <div class="custom-input-group">
+                        <div class="custom-input-header">
+                            <label for="custom-rows">Filas (8 - 36):</label>
+                            <input type="number" id="custom-rows-num" min="8" max="36" value="12"
+                                class="custom-num-input">
+                        </div>
+                        <input type="range" id="custom-rows" min="8" max="36" value="12">
+                    </div>
+
+                    <div class="custom-input-group">
+                        <div class="custom-input-header">
+                            <label for="custom-cols">Columnas (8 - 42):</label>
+                            <input type="number" id="custom-cols-num" min="8" max="42" value="16"
+                                class="custom-num-input">
+                        </div>
+                        <input type="range" id="custom-cols" min="8" max="42" value="16">
+                    </div>
+
+                    <div class="custom-input-group">
+                        <div class="custom-input-header">
+                            <label for="custom-mines">Número de Minas:</label>
+                            <input type="number" id="custom-mines-num" min="1" max="350" value="24"
+                                class="custom-num-input">
+                        </div>
+                        <input type="range" id="custom-mines" min="1" max="350" value="24">
+                    </div>
+                </div>
+
+                <!-- Previsualización Dinámica y Calibrador de Riesgo Renovado -->
+                <div class="custom-preview-card">
+                    <div class="custom-preview-diagram-wrap">
+                        <div id="custom-preview-box" class="custom-preview-box"></div>
+                    </div>
+                    <div class="custom-preview-info">
+                        <div class="custom-stat-row">
+                            <span>Casillas:</span>
+                            <strong id="custom-total-cells">192 (168 seguras)</strong>
+                        </div>
+                        <div class="custom-stat-row">
+                            <span>Densidad:</span>
+                            <strong id="custom-density-pct">12.5%</strong>
+                        </div>
+                        <div class="custom-stat-row">
+                            <span>Juicio de Riesgo:</span>
+                            <span id="custom-danger-badge" class="custom-danger-badge danger-tier-2">Nivel 2/10 ·
+                                Relajado</span>
+                        </div>
+                        <div id="custom-danger-desc" class="custom-danger-desc">
+                            Similar a Modo Fácil; ideal para calentar o partidas ágiles.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de Densidad Visual con Marcadores -->
+                <div class="density-bar-container">
+                    <div class="density-bar-track">
+                        <div id="density-bar-fill" class="density-bar-fill" style="width: 25%;"></div>
+                    </div>
+                    <div class="density-scale-markers">
+                        <span>0%</span>
+                        <span>15% (Clásico)</span>
+                        <span>30% (Alto)</span>
+                        <span>45%+ (Caos)</span>
+                    </div>
+                </div>
+
+                <button id="start-custom-btn" class="btn-primary-action">Iniciar Partida Personalizada</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Ayuda y Atajos -->
+    <div id="help-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="help-title">Cómo Jugar & Atajos</h3>
+                <button class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul class="help-guide-list">
+                    <li><span class="help-key-badge">Clic Izquierdo</span> Cava y despeja una casilla. El primer clic
+                        siempre es seguro.</li>
+                    <li><span class="help-key-badge">Clic Derecho / Hold</span> Coloca o quita una bandera para advertir
+                        de una mina.</li>
+                    <li><span class="help-key-badge">Clic en Número</span> Acorde (Chording): Despeja casillas
+                        adyacentes si las banderas ya están colocadas.</li>
+                    <li><span class="help-key-badge"><kbd>Espacio</kbd></span> Alterna Pala / Bandera (o Reinicia la
+                        partida en Derrota/Victoria).</li>
+                    <li><span class="help-key-badge"><kbd>F</kbd></span> Alternar modo Pantalla Completa.</li>
+                    <li><span class="help-key-badge"><kbd>M</kbd></span> Silenciar o activar sonido.</li>
+                    <li><span class="help-key-badge"><kbd>T</kbd></span> Selector rápido de Temas Visuales.</li>
+                    <li><span class="help-key-badge"><kbd>Tab</kbd></span> Abrir o cerrar panel de configuración.</li>
+                    <li><span class="help-key-badge"><kbd>R</kbd></span> Reiniciar partida inmediatamente en cualquier
+                        momento.</li>
+                    <li><span class="help-key-badge"><kbd>Escape</kbd></span> Cerrar menús o inspeccionar el tablero
+                        tras el fin de partida.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts de la Aplicación -->
+    <script src="audio.js"></script>
+    <script src="game.js"></script>
+    <script src="ui.js"></script>
+</body>
+
+</html>

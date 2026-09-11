@@ -1,0 +1,23 @@
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node y dependencias de test
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos temporales y de desarrollo
+*.tmp
+*.bak
+scratch/
+.tempmediaStorage/
+.user_uploaded/
