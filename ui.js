@@ -155,15 +155,22 @@ class MinesweeperUI {
     updateBoardDimensions() {
         if (!this.boardViewport || !this.boardElement || !this.game) return;
 
-        const padX = 16;
-        const padY = 16;
+        const padX = 8;
+        const padY = 8;
         const availW = Math.max(80, this.boardViewport.clientWidth - padX);
         const availH = Math.max(80, this.boardViewport.clientHeight - padY);
 
         const maxCellW = Math.floor(availW / this.game.cols);
         const maxCellH = Math.floor(availH / this.game.rows);
 
-        const optimalCellSize = Math.max(16, Math.min(68, Math.min(maxCellW, maxCellH)));
+        const isMobile = window.innerWidth <= 768;
+        // En móviles, para tableros compactos, adaptar al área visible.
+        // Para tableros grandes, garantizar un tamaño mínimo de 25px para toques cómodos con el dedo.
+        const minCell = isMobile ? (this.game.cols > 16 ? 25 : 20) : 18;
+        const maxCell = isMobile ? 56 : 68;
+
+        const fitCellSize = Math.min(maxCellW, maxCellH);
+        const optimalCellSize = Math.max(minCell, Math.min(maxCell, fitCellSize));
 
         this.boardElement.style.setProperty('--cell-size', `${optimalCellSize}px`);
         this.boardElement.style.setProperty('--grid-rows', this.game.rows);
@@ -206,7 +213,17 @@ class MinesweeperUI {
         }
 
         this.game = new MinesweeperGame(preset, customConfig);
-        this.presetTabs.forEach(t => t.classList.toggle('active', t.dataset.preset === preset));
+        this.presetTabs.forEach(t => {
+            const isActive = t.dataset.preset === preset;
+            t.classList.toggle('active', isActive);
+            if (isActive) {
+                t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        });
+
+        if (this.boardViewport) {
+            this.boardViewport.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+        }
 
         const useQ = localStorage.getItem('ms_use_questions') === 'true';
         const practice = localStorage.getItem('ms_practice_mode') === 'true';
@@ -255,6 +272,10 @@ class MinesweeperUI {
     bindCellEvents(el, r, c) {
         el.addEventListener('click', (e) => {
             e.preventDefault();
+            if (this.longPressTriggered) {
+                this.longPressTriggered = false;
+                return;
+            }
             if (this.controlMode === 'flag') {
                 this.handleFlagAction(r, c);
             } else {

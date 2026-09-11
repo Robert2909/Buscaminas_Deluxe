@@ -1486,14 +1486,16 @@ body {
 .game-wrapper {
     width: 100%;
     height: 100%;
+    height: 100dvh;
     max-width: 100%;
     margin: 0;
-    padding: 8px 12px;
+    padding: calc(6px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px));
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* ==========================================
@@ -1843,7 +1845,9 @@ body {
     flex: 1;
     min-height: 0;
     max-height: none;
-    overflow: hidden;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1855,11 +1859,14 @@ body {
 }
 
 #board-container {
-    width: 100%;
-    height: 100%;
+    min-width: 100%;
+    min-height: 100%;
+    width: max-content;
+    height: max-content;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: auto;
 }
 
 #game-board {
@@ -2825,72 +2832,270 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
 }
 
 /* ==========================================
-   RESPONSIVIDAD Y OPTIMIZACIÓN MÓVIL
+   RESPONSIVIDAD Y OPTIMIZACIÓN MÓVIL 100%
    ========================================== */
 @media (max-width: 860px) {
     .top-navbar {
         flex-wrap: wrap;
         padding: 5px 8px;
         gap: 6px;
+        border-radius: 10px;
     }
 
     .brand-title {
-        font-size: 1.05rem;
+        font-size: 1rem;
+        gap: 6px;
     }
 
     .presets-bar {
         order: 3;
         width: 100%;
         justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 4px;
+        padding: 3px 4px;
+    }
+
+    .preset-tab {
+        flex-shrink: 0;
+        white-space: nowrap;
+        font-size: 0.76rem;
+        padding: 5px 9px;
+        border-radius: 7px;
     }
 }
 
 @media (max-width: 640px) {
     .game-wrapper {
+        padding: calc(4px + env(safe-area-inset-top, 0px)) calc(6px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(6px + env(safe-area-inset-left, 0px));
+        gap: 4px;
+    }
+
+    .top-navbar {
         padding: 4px 6px;
         gap: 4px;
+    }
+
+    .brand-title {
+        font-size: 0.94rem;
+        gap: 6px;
+    }
+
+    .brand-logo-icon {
+        width: 19px;
+        height: 19px;
+    }
+
+    .nav-actions {
+        gap: 2px;
+    }
+
+    .nav-actions .btn-icon {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        padding: 5px;
+        border-radius: 8px;
     }
 
     .hud-header {
         padding: 4px 8px;
         gap: 6px;
+        margin-bottom: 3px;
     }
 
     .mode-toggle-btn {
         padding: 4px 8px;
         font-size: 0.78rem;
+        min-height: 34px;
+        border-radius: 8px;
     }
 
     .mode-label {
         display: none;
     }
 
-    .preset-tab {
-        padding: 4px 7px;
-        font-size: 0.75rem;
-    }
-
     .face-btn {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
     }
 
     .stat-counter {
-        font-size: 1.1rem;
-        padding: 2px 5px;
-        min-width: 42px;
+        font-size: 1.12rem;
+        padding: 2px 6px;
+        min-width: 44px;
+    }
+
+    #board-viewport {
+        padding: 3px;
+        border-radius: 8px;
+    }
+
+    .modal {
+        padding: 8px;
+    }
+
+    .modal-box {
+        max-width: calc(100vw - 16px);
+        max-height: calc(100dvh - 16px);
+        padding: 14px 12px;
+        border-radius: 14px;
+    }
+
+    .theme-selector-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .theme-option {
+        padding: 8px 6px;
     }
 
     .stats-global-summary {
         grid-template-columns: 1fr 1fr;
+        gap: 6px;
     }
 
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .stats-actions-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .stats-actions-bar button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        padding: 7px 4px;
+        font-size: 0.76rem;
     }
 
     .custom-preview-card {
         flex-direction: column;
+    }
+
+    .endgame-card {
+        max-width: calc(100vw - 24px);
+        padding: 14px 12px;
+        border-radius: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .preset-dim {
+        display: none;
+    }
+
+    .preset-tab {
+        padding: 4px 8px;
+        font-size: 0.74rem;
+    }
+
+    .brand-title {
+        font-size: 0.88rem;
+    }
+
+    .nav-actions .btn-icon {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        padding: 4px;
+    }
+
+    .hud-icon-svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .stat-counter {
+        font-size: 1.05rem;
+        min-width: 40px;
+        padding: 2px 4px;
+    }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .game-wrapper {
+        padding: 2px calc(6px + env(safe-area-inset-right, 0px)) 2px calc(6px + env(safe-area-inset-left, 0px));
+        gap: 2px;
+    }
+
+    .top-navbar {
+        padding: 2px 6px;
+        flex-wrap: nowrap;
+        gap: 4px;
+    }
+
+    .brand-title {
+        font-size: 0.85rem;
+    }
+
+    .brand-title span {
+        display: none;
+    }
+
+    .presets-bar {
+        order: 2;
+        flex: 1;
+        min-width: 0;
+        padding: 1px 3px;
+    }
+
+    .preset-dim {
+        display: none;
+    }
+
+    .preset-tab {
+        padding: 2px 6px;
+        font-size: 0.7rem;
+    }
+
+    .nav-actions {
+        order: 3;
+    }
+
+    .nav-actions .btn-icon {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+        padding: 3px;
+    }
+
+    .hud-header {
+        padding: 2px 6px;
+        margin-bottom: 2px;
+        gap: 4px;
+    }
+
+    .face-btn {
+        width: 30px;
+        height: 30px;
+    }
+
+    .mode-toggle-btn {
+        min-height: 28px;
+        padding: 2px 6px;
+    }
+
+    .stat-counter {
+        font-size: 0.95rem;
+        min-width: 36px;
+        padding: 1px 4px;
+    }
+
+    #board-viewport {
+        padding: 2px;
     }
 }
 
