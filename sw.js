@@ -1,4 +1,4 @@
-const CACHE_NAME = 'buscaminas-deluxe-v1.2';
+const CACHE_NAME = 'buscaminas-deluxe-v1.3';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
     './game.js',
     './audio.js',
     './favicon.svg',
+    './og-image.jpg',
     './manifest.webmanifest'
 ];
 
