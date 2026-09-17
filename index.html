@@ -177,6 +177,17 @@
                 </div>
 
                 <div class="hud-right-group">
+                    <button id="hud-badge-ng" class="hud-badge-ng"
+                        title="Modo No-Guess ACTIVO: 100% resoluble por deducción lógica pura, sin 50/50 (Clic para alternar)"
+                        aria-label="Modo No-Guess">
+                        <svg class="hud-badge-icon" viewBox="0 0 24 24" width="13" height="13" fill="none"
+                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            <path d="m9 12 2 2 4-4" />
+                        </svg>
+                        <span class="hud-badge-text">No-Guess</span>
+                    </button>
+
                     <div class="hud-counter-box" title="Tiempo transcurrido (segundos)">
                         <span class="counter-icon">
                             <svg class="hud-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -204,6 +215,7 @@
                             <div class="endgame-badge-chip">
                                 <span class="endgame-type-pill" id="endgame-type-pill">Victoria</span>
                                 <span class="endgame-preset-pill" id="endgame-preset-pill">Intermedio</span>
+                                <span class="endgame-ng-pill" id="endgame-ng-pill">No-Guess</span>
                             </div>
                             <button id="endgame-close-btn" class="endgame-close-btn"
                                 title="Inspeccionar tablero (Escape)" aria-label="Cerrar ventana">&times;</button>
@@ -372,6 +384,14 @@
                 </div>
 
                 <div class="setting-row">
+                    <label for="setting-no-guess">
+                        Modo No-Guess (Sin Adivinar)
+                        <small class="setting-desc">Garantiza tableros 100% resolubles por pura lógica deductiva, sin 50/50</small>
+                    </label>
+                    <input type="checkbox" id="setting-no-guess" checked>
+                </div>
+
+                <div class="setting-row">
                     <label for="setting-practice-mode">
                         Modo Práctica
                         <small class="setting-desc">Permite deshacer la última explosión</small>
@@ -511,6 +531,7 @@
             </div>
             <div class="modal-body">
                 <ul class="help-guide-list">
+                    <li><span class="help-key-badge">No-Guess</span> Tableros certificados 100% resolubles por deducción lógica. Nunca tendrás que jugártela al azar en un 50/50.</li>
                     <li><span class="help-key-badge">Clic Izquierdo</span> Cava y despeja una casilla. El primer clic
                         siempre es seguro.</li>
                     <li><span class="help-key-badge">Clic Derecho / Hold</span> Coloca o quita una bandera para advertir
@@ -530,6 +551,18 @@
                 </ul>
             </div>
         </div>
+    </div>
+
+    <!-- Indicador Flotante de Acción sobre Puntero / Toque Táctil (Hold Display) -->
+    <div id="pointer-action-bubble" class="pointer-action-bubble hidden" aria-hidden="true">
+        <div class="pointer-bubble-ring">
+            <svg viewBox="0 0 44 44" class="pointer-bubble-svg">
+                <circle class="bubble-ring-bg" cx="22" cy="22" r="18" />
+                <circle id="bubble-ring-fill" class="bubble-ring-fill" cx="22" cy="22" r="18" />
+            </svg>
+            <div class="pointer-bubble-icon" id="pointer-bubble-icon"></div>
+        </div>
+        <span class="pointer-bubble-label" id="pointer-bubble-label">Cavar</span>
     </div>
 
     <!-- Scripts de la Aplicación -->

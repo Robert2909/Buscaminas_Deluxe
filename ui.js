@@ -33,9 +33,24 @@ class MinesweeperUI {
         const savedMode = localStorage.getItem('ms_control_mode');
         this.controlMode = (savedMode === 'flag') ? 'flag' : 'dig';
 
+        // Carga segura de Modo No-Guess global (por defecto activado)
+        const savedNG = localStorage.getItem('ms_no_guess');
+        this.noGuessMode = savedNG === null ? true : savedNG === 'true';
+
         this.hoveredCell = null;
-        this.longPressTimer = null;
-        this.longPressThreshold = 350;
+        this.holdState = {
+            active: false,
+            charged: false,
+            r: null,
+            c: null,
+            cellEl: null,
+            startX: 0,
+            startY: 0,
+            startTime: 0,
+            timerId: null,
+            animId: null,
+            suppressClick: false
+        };
         this.lossCascadeTimeouts = [];
 
         // Referencias a elementos DOM
@@ -50,6 +65,7 @@ class MinesweeperUI {
         this.undoBtn = document.getElementById('undo-btn');
         this.endgamePopup = document.getElementById('endgame-popup');
         this.reopenEndgameBtn = document.getElementById('reopen-endgame-btn');
+        this.ngBadge = document.getElementById('hud-badge-ng');
 
         // Modales
         this.settingsModal = document.getElementById('settings-modal');
@@ -66,10 +82,12 @@ class MinesweeperUI {
         this.setupPresetTabs();
         this.setupShortcuts();
         this.setupResizeObserver();
+        this.setupHoldInteraction();
         this.loadSettings();
         this.updateSoundButton();
         this.updateModeButton();
         this.updateFullscreenButton();
+        this.updateNoGuessBadge();
         this.startNewGame(this.currentPreset);
     }
 
@@ -164,9 +182,9 @@ class MinesweeperUI {
         const maxCellH = Math.floor(availH / this.game.rows);
 
         const isMobile = window.innerWidth <= 768;
-        // En móviles, para tableros compactos, adaptar al área visible.
-        // Para tableros grandes, garantizar un tamaño mínimo de 25px para toques cómodos con el dedo.
-        const minCell = isMobile ? (this.game.cols > 16 ? 25 : 20) : 18;
+        // En móviles, para tableros hasta Intermedio (18 cols), adaptar al área visible sin forzar scroll horizontal.
+        // Para tableros grandes (> 18 cols), garantizar un tamaño mínimo de 26px para toques cómodos con el dedo.
+        const minCell = isMobile ? (this.game.cols > 18 ? 26 : 18) : 18;
         const maxCell = isMobile ? 56 : 68;
 
         const fitCellSize = Math.min(maxCellW, maxCellH);
@@ -205,6 +223,7 @@ class MinesweeperUI {
     }
 
     startNewGame(preset = this.currentPreset, customConfig = this.customConfig) {
+        this.cancelHold(true);
         this.clearLossCascadeTimeouts();
         this.hideEndgamePopup();
         this.hideToast();
@@ -229,6 +248,8 @@ class MinesweeperUI {
         const practice = localStorage.getItem('ms_practice_mode') === 'true';
         this.game.useQuestionMarks = useQ;
         this.game.practiceMode = practice;
+        this.game.noGuessMode = this.noGuessMode;
+        this.updateNoGuessBadge();
 
         this.game.onStateChange = (state) => this.updateFace(state);
         this.game.onCellUpdate = (cell, delay) => this.renderCell(cell, delay);
@@ -270,34 +291,45 @@ class MinesweeperUI {
     }
 
     bindCellEvents(el, r, c) {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (this.longPressTriggered) {
-                this.longPressTriggered = false;
+        // Pointer down para registrar inicio de Hold o toque
+        el.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0 || e.isPrimary === false) return;
+            const cell = this.game?.board[r]?.[c];
+            if (!cell) return;
+
+            // Si la casilla ya está descubierta con número, acorde inmediato sin hold
+            if (cell.isRevealed) {
+                if (parseInt(el.dataset.number) > 0) {
+                    this.handleDigAction(r, c);
+                }
                 return;
             }
-            if (this.controlMode === 'flag') {
+
+            this.startHold(r, c, el, e.clientX, e.clientY);
+        });
+
+        // Click nativo (aplica guard de suppressClick para no duplicar eventos)
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (this.holdState && this.holdState.suppressClick) {
+                return;
+            }
+            const cell = this.game?.board[r]?.[c];
+            if (!cell) return;
+            if (cell.isRevealed) {
+                this.handleDigAction(r, c);
+            } else if (this.controlMode === 'flag') {
                 this.handleFlagAction(r, c);
             } else {
                 this.handleDigAction(r, c);
             }
         });
 
+        // Clic derecho instantáneo en escritorio
         el.addEventListener('contextmenu', (e) => {
             e.preventDefault();
+            this.cancelHold(true);
             this.handleFlagAction(r, c);
-        });
-
-        el.addEventListener('mousedown', (e) => {
-            if (e.button === 0 && this.game.gameState !== 'lost' && this.game.gameState !== 'won') {
-                this.updateFace('holding');
-            }
-        });
-
-        el.addEventListener('mouseup', () => {
-            if (this.game.gameState !== 'lost' && this.game.gameState !== 'won') {
-                this.updateFace(this.game.gameState);
-            }
         });
 
         el.addEventListener('mouseenter', () => {
@@ -310,38 +342,247 @@ class MinesweeperUI {
         el.addEventListener('mouseleave', () => {
             this.hoveredCell = null;
             this.highlightChordNeighbors(r, c, false);
-            if (this.game.gameState !== 'lost' && this.game.gameState !== 'won') {
+            if (this.game && this.game.gameState !== 'lost' && this.game.gameState !== 'won') {
                 this.updateFace(this.game.gameState);
             }
         });
+    }
 
-        el.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                this.longPressTriggered = false;
-                this.longPressTimer = setTimeout(() => {
-                    this.longPressTriggered = true;
-                    if (navigator.vibrate) navigator.vibrate(40);
-                    this.handleFlagAction(r, c);
-                }, this.longPressThreshold);
-            }
-        }, { passive: true });
+    setupHoldInteraction() {
+        this.pointerBubble = document.getElementById('pointer-action-bubble');
+        this.bubbleRingFill = document.getElementById('bubble-ring-fill');
+        this.bubbleIcon = document.getElementById('pointer-bubble-icon');
+        this.bubbleLabel = document.getElementById('pointer-bubble-label');
 
-        el.addEventListener('touchend', (e) => {
-            if (this.longPressTimer) {
-                clearTimeout(this.longPressTimer);
-                this.longPressTimer = null;
-            }
-            if (this.longPressTriggered) {
+        // Escuchadores globales de ventana para captura de toque y ratón sin pérdidas
+        window.addEventListener('pointerup', (e) => this.handleGlobalPointerUp(e), { passive: false });
+        window.addEventListener('pointermove', (e) => this.handleGlobalPointerMove(e), { passive: true });
+        window.addEventListener('pointercancel', () => this.cancelHold(true));
+        window.addEventListener('blur', () => this.cancelHold(true));
+
+        window.addEventListener('contextmenu', (e) => {
+            if (this.holdState && (this.holdState.active || this.holdState.suppressClick)) {
                 e.preventDefault();
             }
         });
+    }
 
-        el.addEventListener('touchmove', () => {
-            if (this.longPressTimer) {
-                clearTimeout(this.longPressTimer);
-                this.longPressTimer = null;
+    startHold(r, c, el, clientX, clientY) {
+        if (!this.game || this.game.gameState === 'won' || this.game.gameState === 'lost') return;
+        const cell = this.game.board[r]?.[c];
+        if (!cell || cell.isRevealed) return;
+
+        this.cancelHold(true);
+
+        this.holdState.active = true;
+        this.holdState.charged = false;
+        this.holdState.r = r;
+        this.holdState.c = c;
+        this.holdState.cellEl = el;
+        this.holdState.startX = clientX;
+        this.holdState.startY = clientY;
+        this.holdState.startTime = performance.now();
+
+        el.classList.add('cell-hold-primed');
+        this.updateFace('holding');
+
+        // Mostrar indicador visual flotante sobre el cursor o dedo
+        this.showPointerBubble(clientX, clientY, false);
+
+        // Animar el anillo de progreso circular en ~260ms
+        const holdDuration = 260;
+        const start = performance.now();
+        const circumference = 113.1;
+
+        if (this.bubbleRingFill) {
+            this.bubbleRingFill.style.transition = 'none';
+            this.bubbleRingFill.style.strokeDashoffset = `${circumference}`;
+        }
+
+        const animateRing = (now) => {
+            if (!this.holdState.active || this.holdState.charged) return;
+            const elapsed = now - start;
+            const progress = Math.min(1, elapsed / holdDuration);
+            const offset = circumference * (1 - progress);
+            if (this.bubbleRingFill) {
+                this.bubbleRingFill.style.strokeDashoffset = `${offset}`;
             }
-        }, { passive: true });
+            if (progress < 1) {
+                this.holdState.animId = requestAnimationFrame(animateRing);
+            }
+        };
+        this.holdState.animId = requestAnimationFrame(animateRing);
+
+        // Al pasar 260ms, se activa el estado cargado y SE QUEDA ESPERANDO indefinidamente
+        this.holdState.timerId = setTimeout(() => {
+            this.chargeHold();
+        }, holdDuration);
+    }
+
+    chargeHold() {
+        if (!this.holdState.active) return;
+        this.holdState.charged = true;
+
+        if (this.holdState.animId) {
+            cancelAnimationFrame(this.holdState.animId);
+            this.holdState.animId = null;
+        }
+
+        // Vibración háptica en móviles
+        if (navigator.vibrate) {
+            navigator.vibrate(35);
+        }
+
+        const isAltFlag = this.controlMode === 'dig';
+
+        if (this.holdState.cellEl) {
+            this.holdState.cellEl.classList.remove('cell-hold-primed');
+            this.holdState.cellEl.classList.add('cell-hold-charged');
+            if (isAltFlag) {
+                this.holdState.cellEl.classList.add('action-flag');
+            }
+        }
+
+        // El bubble pasa a la acción contraria y se queda esperando hasta que el usuario suelte
+        this.showPointerBubble(this.holdState.startX, this.holdState.startY, true);
+    }
+
+    showPointerBubble(x, y, charged) {
+        if (!this.pointerBubble) return;
+
+        const isAltFlag = this.controlMode === 'dig';
+        // En modo pala: normal es Cavar, hold es Bandera
+        // En modo bandera: normal es Bandera, hold es Cavar
+        const isFlag = charged ? isAltFlag : !isAltFlag;
+
+        if (charged) {
+            this.pointerBubble.classList.add('bubble-charged');
+            this.pointerBubble.classList.toggle('action-flag', isFlag);
+            if (this.bubbleRingFill) {
+                this.bubbleRingFill.style.strokeDashoffset = '0';
+            }
+            if (this.bubbleLabel) {
+                this.bubbleLabel.textContent = isFlag ? '¡Soltar: Bandera!' : '¡Soltar: Cavar!';
+            }
+        } else {
+            this.pointerBubble.classList.remove('bubble-charged', 'action-flag');
+            if (this.bubbleLabel) {
+                this.bubbleLabel.textContent = isFlag ? 'Bandera...' : 'Cavar...';
+            }
+        }
+
+        // Iconos SVG limpios (cero emojis)
+        if (this.bubbleIcon) {
+            this.bubbleIcon.innerHTML = isFlag ? `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="3" x2="5" y2="21" stroke-width="2.4"/>
+                    <path d="M5 4c4-1.5 7.5 1.5 13.5 0l-1.8 7.5c-6 1.5-9.5-1.5-11.7 0" fill="#ef4444" stroke="#ef4444"/>
+                    <circle cx="5" cy="3" r="1.2" fill="#ef4444"/>
+                </svg>
+            ` : `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M 2 22 C 2 16, 4 12, 6.5 9.5 L 13.5 16.5 C 12 19, 8 22, 2 22 Z" fill="currentColor" fill-opacity="0.35"/>
+                    <line x1="3.5" y1="20.5" x2="8" y2="16" stroke-width="1.3" opacity="0.65"/>
+                    <line x1="10" y1="13" x2="15.5" y2="7.5" stroke-width="2.2"/>
+                    <path d="M 14 6 L 16.5 3.5 C 17.5 2.5, 19.5 2.5, 20.5 3.5 C 21.5 4.5, 21.5 6.5, 20.5 7.5 L 17 10" stroke-width="1.8"/>
+                    <line x1="14" y1="6" x2="17" y2="9" stroke-width="2"/>
+                </svg>
+            `;
+        }
+
+        const placeBottom = y < 75;
+        this.pointerBubble.classList.toggle('placement-bottom', placeBottom);
+
+        const clampedX = Math.max(60, Math.min(window.innerWidth - 60, x));
+        const posY = placeBottom ? (y + 12) : (y - 12);
+
+        this.pointerBubble.style.left = `${clampedX}px`;
+        this.pointerBubble.style.top = `${posY}px`;
+        this.pointerBubble.classList.remove('hidden');
+    }
+
+    handleGlobalPointerUp(e) {
+        if (!this.holdState || !this.holdState.active) return;
+
+        const { charged, r, c } = this.holdState;
+
+        this.cancelHold(false);
+
+        this.holdState.suppressClick = true;
+        setTimeout(() => {
+            if (this.holdState) {
+                this.holdState.suppressClick = false;
+            }
+        }, 300);
+
+        if (charged) {
+            // Ejecutar la acción contraria al modo seleccionado
+            if (this.controlMode === 'dig') {
+                this.handleFlagAction(r, c);
+            } else {
+                this.handleDigAction(r, c);
+            }
+        } else {
+            // Toque o clic rápido ordinario
+            if (this.controlMode === 'flag') {
+                this.handleFlagAction(r, c);
+            } else {
+                this.handleDigAction(r, c);
+            }
+        }
+
+        this.holdState.active = false;
+        this.holdState.charged = false;
+        this.holdState.r = null;
+        this.holdState.c = null;
+        this.holdState.cellEl = null;
+
+        if (this.game && this.game.gameState !== 'lost' && this.game.gameState !== 'won') {
+            this.updateFace(this.game.gameState);
+        }
+    }
+
+    handleGlobalPointerMove(e) {
+        if (!this.holdState || !this.holdState.active) return;
+
+        const dx = e.clientX - this.holdState.startX;
+        const dy = e.clientY - this.holdState.startY;
+        const dist = Math.hypot(dx, dy);
+
+        // Si se mueve más de 18px, el usuario está haciendo scroll del tablero: cancelar hold limpiamente
+        if (dist > 18) {
+            this.cancelHold(true);
+            if (this.game && this.game.gameState !== 'lost' && this.game.gameState !== 'won') {
+                this.updateFace(this.game.gameState);
+            }
+        }
+    }
+
+    cancelHold(resetState = true) {
+        if (!this.holdState) return;
+
+        if (this.holdState.timerId) {
+            clearTimeout(this.holdState.timerId);
+            this.holdState.timerId = null;
+        }
+        if (this.holdState.animId) {
+            cancelAnimationFrame(this.holdState.animId);
+            this.holdState.animId = null;
+        }
+        if (this.holdState.cellEl) {
+            this.holdState.cellEl.classList.remove('cell-hold-primed', 'cell-hold-charged', 'action-flag');
+        }
+        if (this.pointerBubble) {
+            this.pointerBubble.classList.add('hidden');
+            this.pointerBubble.classList.remove('bubble-charged', 'action-flag');
+        }
+        if (resetState) {
+            this.holdState.active = false;
+            this.holdState.charged = false;
+            this.holdState.r = null;
+            this.holdState.c = null;
+            this.holdState.cellEl = null;
+        }
     }
 
     handleDigAction(r, c) {
@@ -924,6 +1165,16 @@ class MinesweeperUI {
         }
     }
 
+    updateNoGuessBadge() {
+        if (!this.ngBadge) return;
+        const isActive = this.noGuessMode;
+        this.ngBadge.classList.toggle('ng-inactive', !isActive);
+        this.ngBadge.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        this.ngBadge.title = isActive
+            ? 'Modo No-Guess ACTIVO: Partida 100% resoluble por deducción lógica pura, sin 50/50 (Clic para alternar)'
+            : 'Modo No-Guess INACTIVO: Tableros clásicos aleatorios (Clic para activar)';
+    }
+
     setupEventListeners() {
         // Botón carita (Reiniciar)
         this.faceBtn.addEventListener('click', () => {
@@ -936,6 +1187,22 @@ class MinesweeperUI {
             this.controlMode = this.controlMode === 'dig' ? 'flag' : 'dig';
             this.updateModeButton();
             window.soundEngine?.playDig(1.4);
+        });
+
+        // Botón / Badge No-Guess (Alternar Modo No-Guess en vivo)
+        this.ngBadge?.addEventListener('click', () => {
+            this.noGuessMode = !this.noGuessMode;
+            localStorage.setItem('ms_no_guess', this.noGuessMode ? 'true' : 'false');
+            if (this.game) {
+                this.game.noGuessMode = this.noGuessMode;
+            }
+            const checkbox = document.getElementById('setting-no-guess');
+            if (checkbox) checkbox.checked = this.noGuessMode;
+            this.updateNoGuessBadge();
+            window.soundEngine?.playFlag();
+            this.showToast(this.noGuessMode 
+                ? 'Modo No-Guess activado (100% lógica deductiva)' 
+                : 'Modo No-Guess desactivado (tableros clásicos)', 'info');
         });
 
         // Botón deshacer (Modo práctica)
@@ -1292,6 +1559,22 @@ class MinesweeperUI {
     }
 
     loadSettings() {
+        const noGuessCheck = document.getElementById('setting-no-guess');
+        if (noGuessCheck) {
+            noGuessCheck.checked = this.noGuessMode;
+            noGuessCheck.addEventListener('change', (e) => {
+                this.noGuessMode = e.target.checked;
+                localStorage.setItem('ms_no_guess', this.noGuessMode ? 'true' : 'false');
+                if (this.game) {
+                    this.game.noGuessMode = this.noGuessMode;
+                }
+                this.updateNoGuessBadge();
+                this.showToast(this.noGuessMode 
+                    ? 'Modo No-Guess activado (100% lógica deductiva)' 
+                    : 'Modo No-Guess desactivado (tableros clásicos)', 'info');
+            });
+        }
+
         const practiceCheck = document.getElementById('setting-practice-mode');
         if (practiceCheck) {
             practiceCheck.checked = localStorage.getItem('ms_practice_mode') === 'true';
@@ -1452,6 +1735,13 @@ class MinesweeperUI {
             presetPill.textContent = `${presetName} (${this.game.cols}×${this.game.rows})`;
         }
 
+        const ngPill = document.getElementById('endgame-ng-pill');
+        if (ngPill) {
+            const isNG = this.game.isGuaranteedNoGuess || this.game.noGuessMode;
+            ngPill.classList.toggle('hidden', !isNG);
+            ngPill.textContent = 'No-Guess';
+        }
+
         // Hero SVG Icon
         const heroIcon = document.getElementById('endgame-hero-icon');
         if (heroIcon) {
@@ -1600,6 +1890,9 @@ class MinesweeperUI {
         let summary = `[Buscaminas Deluxe] Resultado:\n`;
         summary += `• Estado: ${isWon ? 'Victoria' : 'Has explotado...'}\n`;
         summary += `• Nivel: ${presetName} (${this.game.cols}x${this.game.rows})\n`;
+        if (this.game.isGuaranteedNoGuess || this.game.noGuessMode) {
+            summary += `• Modo: No-Guess (100% Lógica Pura)\n`;
+        }
         summary += `• Tiempo: ${time}\n`;
         summary += `• Campo despejado: ${clearedPct}% (${this.game.revealedCount}/${targetSafe})\n`;
         summary += `• Minas totales: ${this.game.totalMines}\n`;

@@ -1785,6 +1785,78 @@ body {
     display: none !important;
 }
 
+/* Badge / Botón No-Guess en el HUD */
+.hud-badge-ng {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    color: #10b981;
+    padding: 4px 9px;
+    border-radius: 14px;
+    font-family: var(--font-display);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: all var(--transition-snappy);
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.hud-badge-ng:hover {
+    background: rgba(16, 185, 129, 0.32);
+    border-color: rgba(16, 185, 129, 0.7);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+}
+
+.hud-badge-ng:active {
+    transform: scale(0.95);
+}
+
+.hud-badge-ng.ng-inactive {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-muted, #94a3b8);
+    opacity: 0.65;
+    box-shadow: none;
+}
+
+.hud-badge-ng.ng-inactive:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.hud-badge-icon {
+    display: block;
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+/* Pill No-Guess en ventana de fin de partida */
+.endgame-ng-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+    color: #10b981;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.endgame-ng-pill.hidden {
+    display: none !important;
+}
+
 /* Botón Cara Reactiva */
 .face-btn {
     background: rgba(255, 255, 255, 0.2);
@@ -1849,8 +1921,6 @@ body {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 4px;
     background: rgba(0, 0, 0, 0.12);
     border-radius: 10px;
@@ -1859,14 +1929,15 @@ body {
 }
 
 #board-container {
-    min-width: 100%;
-    min-height: 100%;
-    width: max-content;
-    height: max-content;
+    margin: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: auto;
+    width: max-content;
+    height: max-content;
+    min-width: 0;
+    min-height: 0;
+    padding: 2px;
 }
 
 #game-board {
@@ -2019,6 +2090,155 @@ body {
     20%, 80% { transform: translate3d(3px, 0, 0); }
     30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
     40%, 60% { transform: translate3d(5px, 0, 0); }
+}
+
+/* ==========================================
+   DISPLAY FLOTANTE DE ACCIÓN (HOLD & POINTER)
+   ========================================== */
+.pointer-action-bubble {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translate(-50%, -100%) translateY(-24px);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #ffffff;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    padding: 3px 11px 3px 4px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    z-index: 9999;
+    pointer-events: none;
+    user-select: none;
+    opacity: 1;
+    transition: opacity 0.12s ease, transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pointer-action-bubble.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -100%) translateY(-12px) scale(0.92);
+}
+
+.pointer-action-bubble.placement-bottom {
+    transform: translate(-50%, 0%) translateY(28px);
+}
+
+.pointer-bubble-ring {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pointer-bubble-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.bubble-ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.18);
+    stroke-width: 3;
+}
+
+.bubble-ring-fill {
+    fill: none;
+    stroke: #38bdf8;
+    stroke-width: 3.2;
+    stroke-linecap: round;
+    stroke-dasharray: 113.1;
+    stroke-dashoffset: 113.1;
+    transition: stroke 0.15s ease;
+}
+
+.pointer-bubble-icon {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.pointer-bubble-icon svg {
+    width: 15px;
+    height: 15px;
+    display: block;
+}
+
+.pointer-bubble-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+/* Estado de Hold Cargado (Listo para soltar y ejecutar la acción contraria) */
+.pointer-action-bubble.bubble-charged {
+    border-color: #22c55e;
+    background: rgba(15, 23, 42, 0.96);
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.55), 0 10px 28px rgba(0, 0, 0, 0.5);
+    animation: bubblePulse 0.75s infinite alternate ease-in-out;
+}
+
+.pointer-action-bubble.bubble-charged .bubble-ring-fill {
+    stroke: #22c55e;
+    stroke-dashoffset: 0 !important;
+}
+
+.pointer-action-bubble.bubble-charged.action-flag {
+    border-color: #ef4444;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.55), 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+.pointer-action-bubble.bubble-charged.action-flag .bubble-ring-fill {
+    stroke: #ef4444;
+}
+
+@keyframes bubblePulse {
+    from { transform: translate(-50%, -100%) translateY(-24px) scale(1); }
+    to { transform: translate(-50%, -100%) translateY(-28px) scale(1.06); }
+}
+
+.pointer-action-bubble.placement-bottom.bubble-charged {
+    animation: bubblePulseBottom 0.75s infinite alternate ease-in-out;
+}
+
+@keyframes bubblePulseBottom {
+    from { transform: translate(-50%, 0%) translateY(28px) scale(1); }
+    to { transform: translate(-50%, 0%) translateY(32px) scale(1.06); }
+}
+
+/* Retroalimentación en la celda activa durante el Hold */
+.cell.cell-hold-primed {
+    filter: brightness(1.22);
+    box-shadow: inset 0 0 0 2px #38bdf8, 0 0 8px rgba(56, 189, 248, 0.5) !important;
+    transform: scale(0.96);
+    transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.cell.cell-hold-charged {
+    filter: brightness(1.32);
+    box-shadow: inset 0 0 0 2.5px #22c55e, 0 0 12px rgba(34, 197, 94, 0.7) !important;
+    transform: scale(0.93);
+}
+
+.cell.cell-hold-charged.action-flag {
+    box-shadow: inset 0 0 0 2.5px #ef4444, 0 0 12px rgba(239, 68, 68, 0.7) !important;
 }
 
 /* ==========================================
@@ -2914,6 +3134,12 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
         border-radius: 8px;
     }
 
+    .hud-badge-ng {
+        padding: 3px 7px;
+        font-size: 0.72rem;
+        border-radius: 9px;
+    }
+
     .mode-label {
         display: none;
     }
@@ -3021,6 +3247,14 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
         font-size: 1.05rem;
         min-width: 40px;
         padding: 2px 4px;
+    }
+
+    .hud-badge-ng {
+        padding: 2px 6px;
+    }
+
+    .hud-badge-text {
+        font-size: 0.68rem;
     }
 }
 
