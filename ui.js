@@ -1737,7 +1737,7 @@ class MinesweeperUI {
 
         const ngPill = document.getElementById('endgame-ng-pill');
         if (ngPill) {
-            const isNG = this.game.isGuaranteedNoGuess || this.game.noGuessMode;
+            const isNG = Boolean(this.game && this.game.isGuaranteedNoGuess);
             ngPill.classList.toggle('hidden', !isNG);
             ngPill.textContent = 'No-Guess';
         }
@@ -1890,7 +1890,7 @@ class MinesweeperUI {
         let summary = `[Buscaminas Deluxe] Resultado:\n`;
         summary += `• Estado: ${isWon ? 'Victoria' : 'Has explotado...'}\n`;
         summary += `• Nivel: ${presetName} (${this.game.cols}x${this.game.rows})\n`;
-        if (this.game.isGuaranteedNoGuess || this.game.noGuessMode) {
+        if (this.game && this.game.isGuaranteedNoGuess) {
             summary += `• Modo: No-Guess (100% Lógica Pura)\n`;
         }
         summary += `• Tiempo: ${time}\n`;

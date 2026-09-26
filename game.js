@@ -34,9 +34,15 @@ class NoGuessSolver {
 
         let revealedCount = 0;
         let flaggedCount = 0;
+        let isValid = true;
 
         const reveal = (r, c) => {
-            if (state[r][c] !== -2) return;
+            if (!isValid || state[r][c] !== -2) return;
+            // Verificación estricta: Si se intenta revelar una mina real, la deducción fue inválida
+            if (minesArray[r][c]) {
+                isValid = false;
+                return;
+            }
             state[r][c] = neighborCount[r][c];
             revealedCount++;
             if (neighborCount[r][c] === 0) {
@@ -52,19 +58,23 @@ class NoGuessSolver {
         };
 
         const flag = (r, c) => {
-            if (state[r][c] === -2) {
-                state[r][c] = -1;
-                flaggedCount++;
+            if (!isValid || state[r][c] !== -2) return;
+            // Verificación estricta: Si se intenta marcar una casilla sin mina, la deducción fue inválida
+            if (!minesArray[r][c]) {
+                isValid = false;
+                return;
             }
+            state[r][c] = -1;
+            flaggedCount++;
         };
 
         reveal(startR, startC);
 
         let progress = true;
-        while (progress && revealedCount < targetSafe) {
+        while (progress && isValid && revealedCount < targetSafe) {
             progress = false;
 
-            // 1. Deducciones directas por celda
+            // 1. Deducciones directas por celda única
             const rawConstraints = [];
 
             for (let r = 0; r < rows; r++) {
@@ -109,7 +119,7 @@ class NoGuessSolver {
                 }
             }
 
-            if (progress || revealedCount >= targetSafe) continue;
+            if (progress || !isValid || revealedCount >= targetSafe) continue;
 
             // Deduplicar restricciones
             const constraints = [];
@@ -123,7 +133,7 @@ class NoGuessSolver {
                 }
             }
 
-            // 2. Reducción matemática generalizada de solapamiento de pares (Subconjuntos / 1-2 / 1-2-1)
+            // 2. Reducción matemática rigurosa de solapamiento de pares (Subconjuntos / 1-2 / 1-2-1)
             for (let i = 0; i < constraints.length; i++) {
                 for (let j = i + 1; j < constraints.length; j++) {
                     const A = constraints[i];
@@ -154,23 +164,28 @@ class NoGuessSolver {
                     const minS = Math.max(0, A.sum - onlyA.length, B.sum - onlyB.length);
                     const maxS = Math.min(S.length, A.sum, B.sum);
 
+                    // Reglas corregidas:
+                    // onlyB son minas garantizadas si B.sum - maxS === onlyB.length
+                    // onlyB son seguras garantizadas si B.sum - minS === 0
                     if (onlyB.length > 0) {
-                        if (B.sum - minS === onlyB.length) {
+                        if (B.sum - maxS === onlyB.length) {
                             for (const idx of onlyB) flag(Math.floor(idx / cols), idx % cols);
                             progress = true;
                         }
-                        if (B.sum - maxS === 0) {
+                        if (B.sum - minS === 0) {
                             for (const idx of onlyB) reveal(Math.floor(idx / cols), idx % cols);
                             progress = true;
                         }
                     }
 
+                    // onlyA son minas garantizadas si A.sum - maxS === onlyA.length
+                    // onlyA son seguras garantizadas si A.sum - minS === 0
                     if (onlyA.length > 0) {
-                        if (A.sum - minS === onlyA.length) {
+                        if (A.sum - maxS === onlyA.length) {
                             for (const idx of onlyA) flag(Math.floor(idx / cols), idx % cols);
                             progress = true;
                         }
-                        if (A.sum - maxS === 0) {
+                        if (A.sum - minS === 0) {
                             for (const idx of onlyA) reveal(Math.floor(idx / cols), idx % cols);
                             progress = true;
                         }
@@ -190,35 +205,139 @@ class NoGuessSolver {
                 if (progress) break;
             }
 
-            if (progress || revealedCount >= targetSafe) continue;
+            if (progress || !isValid || revealedCount >= targetSafe) continue;
 
-            // 3. Conteo Global de Minas Restantes (Final de juego e islas)
-            const remainingMinesTotal = totalMines - flaggedCount;
-            let unrevealedTotal = 0;
-            const allUnrevealed = [];
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (state[r][c] === -2) {
-                        unrevealedTotal++;
-                        allUnrevealed.push(r * cols + c);
+            // 3. Tank Solver (CSP / Backtracking exacto por componentes conectados)
+            if (constraints.length > 0) {
+                const cellToConstraints = new Map();
+                for (let cIdx = 0; cIdx < constraints.length; cIdx++) {
+                    for (const cell of constraints[cIdx].cells) {
+                        if (!cellToConstraints.has(cell)) cellToConstraints.set(cell, []);
+                        cellToConstraints.get(cell).push(cIdx);
                     }
+                }
+
+                const visitedCells = new Set();
+                const components = [];
+
+                for (const startCell of cellToConstraints.keys()) {
+                    if (visitedCells.has(startCell)) continue;
+                    const compCells = [];
+                    const compConstraintIndices = new Set();
+                    const queue = [startCell];
+                    visitedCells.add(startCell);
+
+                    while (queue.length > 0) {
+                        const cell = queue.shift();
+                        compCells.push(cell);
+                        for (const cIdx of cellToConstraints.get(cell) || []) {
+                            compConstraintIndices.add(cIdx);
+                            for (const nextCell of constraints[cIdx].cells) {
+                                if (!visitedCells.has(nextCell)) {
+                                    visitedCells.add(nextCell);
+                                    queue.push(nextCell);
+                                }
+                            }
+                        }
+                    }
+
+                    components.push({
+                        cells: compCells,
+                        constraints: Array.from(compConstraintIndices).map(idx => constraints[idx])
+                    });
+                }
+
+                for (const comp of components) {
+                    if (comp.cells.length > 22) continue; // Límite de seguridad de rendimiento
+                    const compCells = comp.cells;
+                    const compConstraints = comp.constraints;
+                    const cellIndexMap = new Map();
+                    compCells.forEach((c, idx) => cellIndexMap.set(c, idx));
+
+                    const fastConstraints = compConstraints.map(c => ({
+                        indices: c.cells.map(cell => cellIndexMap.get(cell)),
+                        sum: c.sum
+                    }));
+
+                    const remainingMines = totalMines - flaggedCount;
+                    const cellMineCount = new Array(compCells.length).fill(0);
+                    let validCombinations = 0;
+                    const assignment = new Array(compCells.length).fill(0);
+
+                    function backtrack(idx, currentMines) {
+                        if (currentMines > remainingMines) return;
+                        for (let c = 0; c < fastConstraints.length; c++) {
+                            const fc = fastConstraints[c];
+                            let assignedMines = 0;
+                            let unassignedCount = 0;
+                            for (let i = 0; i < fc.indices.length; i++) {
+                                const cIdx = fc.indices[i];
+                                if (cIdx < idx) assignedMines += assignment[cIdx];
+                                else unassignedCount++;
+                            }
+                            if (assignedMines > fc.sum) return;
+                            if (assignedMines + unassignedCount < fc.sum) return;
+                        }
+
+                        if (idx === compCells.length) {
+                            validCombinations++;
+                            for (let i = 0; i < compCells.length; i++) cellMineCount[i] += assignment[i];
+                            return;
+                        }
+
+                        assignment[idx] = 0;
+                        backtrack(idx + 1, currentMines);
+                        assignment[idx] = 1;
+                        backtrack(idx + 1, currentMines + 1);
+                    }
+
+                    backtrack(0, 0);
+
+                    if (validCombinations > 0) {
+                        for (let i = 0; i < compCells.length; i++) {
+                            const cellIdx = compCells[i];
+                            const r = Math.floor(cellIdx / cols);
+                            const c = cellIdx % cols;
+                            if (cellMineCount[i] === 0) {
+                                reveal(r, c);
+                                progress = true;
+                            } else if (cellMineCount[i] === validCombinations) {
+                                flag(r, c);
+                                progress = true;
+                            }
+                        }
+                    }
+                    if (progress) break;
                 }
             }
 
-            if (remainingMinesTotal === 0 && unrevealedTotal > 0) {
-                for (let i = 0; i < allUnrevealed.length; i++) {
-                    reveal(Math.floor(allUnrevealed[i] / cols), allUnrevealed[i] % cols);
+            if (progress || !isValid || revealedCount >= targetSafe) continue;
+
+            // 4. Conteo Global de Minas Restantes (Final de juego e islas)
+            const remainingMinesTotal = totalMines - flaggedCount;
+            const allUnrevealed = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (state[r][c] === -2) allUnrevealed.push(r * cols + c);
                 }
+            }
+
+            if (remainingMinesTotal === 0 && allUnrevealed.length > 0) {
+                for (const idx of allUnrevealed) reveal(Math.floor(idx / cols), idx % cols);
                 progress = true;
-            } else if (remainingMinesTotal === unrevealedTotal && unrevealedTotal > 0) {
-                for (let i = 0; i < allUnrevealed.length; i++) {
-                    flag(Math.floor(allUnrevealed[i] / cols), allUnrevealed[i] % cols);
-                }
+            } else if (remainingMinesTotal === allUnrevealed.length && allUnrevealed.length > 0) {
+                for (const idx of allUnrevealed) flag(Math.floor(idx / cols), idx % cols);
                 progress = true;
             }
         }
 
-        return revealedCount === targetSafe;
+        const isFullySolvable = isValid && (revealedCount === targetSafe);
+        return {
+            solvable: isFullySolvable,
+            revealedCount,
+            targetSafe,
+            state
+        };
     }
 }
 
@@ -333,7 +452,7 @@ class MinesweeperGame {
     }
 
     /**
-     * Algoritmo de Generación Garantizada No-Guess (100% resoluble por lógica deductiva)
+     * Algoritmo de Generación Garantizada No-Guess (100% resoluble por lógica deductiva pura)
      */
     generateNoGuessMines(safeR, safeC) {
         const totalCells = this.rows * this.cols;
@@ -359,30 +478,81 @@ class MinesweeperGame {
             }
         }
 
-        const maxAttempts = 60;
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // Semillas y bucle de reparación adaptativa de frontera
+        const maxSeeds = 25;
+        const maxRepairsPerSeed = 40;
+
+        for (let seed = 0; seed < maxSeeds; seed++) {
             const candidateBoard = Array.from({ length: this.rows }, () => Array(this.cols).fill(false));
             const pool = [...candidateIndices];
-            let placed = 0;
-            while (placed < this.totalMines && pool.length > 0) {
-                const randIdx = Math.floor(Math.random() * pool.length);
-                const chosen = pool.splice(randIdx, 1)[0];
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            for (let i = 0; i < this.totalMines; i++) {
+                const chosen = pool[i];
                 candidateBoard[Math.floor(chosen / this.cols)][chosen % this.cols] = true;
-                placed++;
             }
 
-            if (NoGuessSolver.isSolvable(this.rows, this.cols, candidateBoard, safeR, safeC)) {
+            let result = NoGuessSolver.isSolvable(this.rows, this.cols, candidateBoard, safeR, safeC);
+            if (result.solvable || result === true) {
+                this.applyCandidateBoard(candidateBoard);
+                return true;
+            }
+
+            // Bucle de reparación: detectar ambigüedad en la frontera y reubicar minas problemáticas
+            for (let rep = 0; rep < maxRepairsPerSeed; rep++) {
+                const frontierMines = [];
+                const deepSafe = [];
+
                 for (let r = 0; r < this.rows; r++) {
                     for (let c = 0; c < this.cols; c++) {
-                        this.board[r][c].isMine = candidateBoard[r][c];
+                        if (result.state && result.state[r][c] === -2) {
+                            let touchesRevealed = false;
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    const nr = r + dr, nc = c + dc;
+                                    if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols && result.state[nr][nc] >= 0) {
+                                        touchesRevealed = true;
+                                        break;
+                                    }
+                                }
+                                if (touchesRevealed) break;
+                            }
+                            if (touchesRevealed && candidateBoard[r][c]) {
+                                frontierMines.push({ r, c });
+                            } else if (!touchesRevealed && !candidateBoard[r][c] && !safeIndices.has(r * this.cols + c)) {
+                                deepSafe.push({ r, c });
+                            }
+                        }
                     }
                 }
-                this.calculateNeighborMines();
-                return true;
+
+                if (frontierMines.length === 0 || deepSafe.length === 0) break;
+
+                const fMine = frontierMines[Math.floor(Math.random() * frontierMines.length)];
+                const dSafe = deepSafe[Math.floor(Math.random() * deepSafe.length)];
+                candidateBoard[fMine.r][fMine.c] = false;
+                candidateBoard[dSafe.r][dSafe.c] = true;
+
+                result = NoGuessSolver.isSolvable(this.rows, this.cols, candidateBoard, safeR, safeC);
+                if (result.solvable || result === true) {
+                    this.applyCandidateBoard(candidateBoard);
+                    return true;
+                }
             }
         }
 
         return false;
+    }
+
+    applyCandidateBoard(candidateBoard) {
+        for (let r = 0; r < this.rows; r++) {
+            for (let c = 0; c < this.cols; c++) {
+                this.board[r][c].isMine = candidateBoard[r][c];
+            }
+        }
+        this.calculateNeighborMines();
     }
 
     generateStandardMines(safeR, safeC) {
