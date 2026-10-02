@@ -2715,13 +2715,20 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    height: var(--app-height, 100dvh);
+    max-height: 100%;
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 3000;
-    padding: 14px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) calc(10px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
+    overflow: hidden;
+    touch-action: pan-y;
 }
 
 .modal.active {
@@ -2732,10 +2739,13 @@ body {
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .modal-box {
@@ -2744,11 +2754,14 @@ body {
     color: var(--modal-text, #f8fafc);
     border: var(--modal-border, 1px solid #334155);
     border-radius: var(--modal-radius, 16px);
-    padding: 18px 20px;
+    padding: 16px 18px 0 18px;
     width: 100%;
     max-width: 490px;
-    max-height: 88vh;
-    overflow-y: auto;
+    max-height: calc(var(--app-height, 100dvh) - 24px);
+    max-height: calc(100dvh - 24px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-shadow: var(--modal-shadow, 0 20px 40px rgba(0, 0, 0, 0.5));
     z-index: 10;
     animation: modalIn 0.22s cubic-bezier(0.18, 0.89, 0.32, 1.28);
@@ -2764,9 +2777,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     border-bottom: var(--modal-header-border, 1px solid rgba(255, 255, 255, 0.1));
     padding-bottom: 10px;
+    flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -2783,6 +2797,7 @@ body {
     cursor: pointer;
     padding: 4px;
     transition: color 0.15s;
+    line-height: 1;
 }
 
 .modal-close:hover {
@@ -2793,6 +2808,22 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    padding-right: 4px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 10px));
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-shrink: 0;
 }
 
 /* Selector de Temas */
@@ -3861,35 +3892,51 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
         font-size: 0.75rem;
     }
 
-    /* Modal Estilo Bottom-Sheet en Pantalla Táctil Móvil */
+    /* Modal en Pantalla Móvil (Acceso Completo y Scroll 100% Garantizado) */
     .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        height: var(--app-height, 100dvh);
+        max-height: 100%;
         align-items: flex-end;
         justify-content: center;
         padding: 0;
+        overflow: hidden;
     }
 
     .modal-box {
         width: 100%;
         max-width: 100%;
-        max-height: 85dvh;
-        max-height: 85vh;
+        max-height: calc(var(--app-height, 100dvh) - 18px);
+        max-height: calc(100dvh - 18px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         border-bottom-left-radius: 0 !important;
         border-bottom-right-radius: 0 !important;
         border-top-left-radius: 20px;
         border-top-right-radius: 20px;
-        padding: 14px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+        padding: 12px 14px 0 14px;
         margin: 0;
-        animation: modalSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+        animation: modalSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .modal-box::before {
         content: '';
         display: block;
-        width: 36px;
+        width: 38px;
         height: 4px;
         border-radius: 2px;
-        background: rgba(160, 160, 160, 0.35);
-        margin: -6px auto 12px auto;
+        background: rgba(160, 160, 160, 0.4);
+        margin: -2px auto 10px auto;
+        flex-shrink: 0;
     }
 
     @keyframes modalSlideUp {
@@ -3908,12 +3955,25 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
     }
 
     .modal-header {
+        flex-shrink: 0;
         margin-bottom: 10px;
         padding-bottom: 8px;
     }
 
     .modal-header h3 {
         font-size: 1.1rem;
+    }
+
+    .modal-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+        padding-bottom: calc(44px + env(safe-area-inset-bottom, 20px));
+        padding-right: 4px;
     }
 
     /* Ajustes Específicos de Modales en Móvil */
@@ -3985,8 +4045,13 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
 
     .endgame-card {
         max-width: calc(100vw - 20px);
+        max-height: calc(var(--app-height, 100dvh) - 20px);
+        max-height: calc(100dvh - 20px);
         padding: 12px 10px;
         border-radius: 14px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
     }
 
     .help-guide-list li {
@@ -4109,7 +4174,14 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
     }
 
     .modal-box {
-        padding: 12px 10px calc(14px + env(safe-area-inset-bottom, 0px));
+        padding: 10px 10px 0 10px;
+        max-height: calc(var(--app-height, 100dvh) - 10px);
+        max-height: calc(100dvh - 10px);
+    }
+
+    .modal-body {
+        padding-bottom: calc(40px + env(safe-area-inset-bottom, 16px));
+        gap: 10px;
     }
 }
 
@@ -4218,23 +4290,55 @@ body.theme-retro95 input[type="checkbox"]:checked::after {
     }
 
     .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        height: var(--app-height, 100dvh);
+        max-height: 100%;
         align-items: center;
         justify-content: center;
-        padding: 8px;
+        padding: 6px;
+        overflow: hidden;
     }
 
     .modal-box {
-        max-height: 94vh;
+        max-height: calc(var(--app-height, 100dvh) - 12px);
+        max-height: calc(100dvh - 12px);
         max-width: 520px;
-        width: 94%;
+        width: 96%;
         border-radius: 14px !important;
-        padding: 10px 12px;
+        padding: 8px 12px 0 12px;
         margin: auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         animation: none;
     }
 
     .modal-box::before {
         display: none;
+    }
+
+    .modal-header {
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+        flex-shrink: 0;
+    }
+
+    .modal-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 10px));
     }
 }
 

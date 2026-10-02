@@ -156,6 +156,15 @@ class MinesweeperUI {
             this.updateDeviceProfile();
         }, { passive: true });
 
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                this.updateDeviceProfile();
+            }, { passive: true });
+            window.visualViewport.addEventListener('scroll', () => {
+                this.updateDeviceProfile();
+            }, { passive: true });
+        }
+
         window.addEventListener('orientationchange', () => {
             setTimeout(() => {
                 this.updateDeviceProfile();
@@ -176,8 +185,9 @@ class MinesweeperUI {
     }
 
     updateDeviceProfile() {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        const vv = window.visualViewport;
+        const w = vv ? Math.round(vv.width) : window.innerWidth;
+        const h = vv ? Math.round(vv.height) : window.innerHeight;
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         const isMobile = w <= 768 || (isTouch && w <= 1024);
         const isSmallMobile = w <= 430;
@@ -2395,7 +2405,12 @@ class MinesweeperUI {
     openModal(modal) {
         if (!modal) return;
         this.closeAllModals();
+        this.updateDeviceProfile();
         modal.classList.add('active');
+        const scrollEl = modal.querySelector('.modal-body') || modal.querySelector('.modal-box');
+        if (scrollEl) {
+            scrollEl.scrollTop = 0;
+        }
         if (modal === this.customModal && this.updateCustomUI) {
             this.updateCustomUI();
         }
