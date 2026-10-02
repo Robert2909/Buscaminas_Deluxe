@@ -374,6 +374,8 @@ class MinesweeperGame {
         this.practiceMode = false; // Permite deshacer si explota
         this.noGuessMode = true; // Modo No-Guess global por defecto
         this.isGuaranteedNoGuess = false;
+        this.noGuessFallback = false;
+        this.noGuessFallbackInfo = null;
         this.lastExplodedCell = null;
 
         // Callbacks de UI
@@ -390,8 +392,8 @@ class MinesweeperGame {
 
     applyConfig() {
         if (this.presetKey === 'custom' && this.customConfig) {
-            this.rows = Math.max(8, Math.min(36, parseInt(this.customConfig.rows) || 10));
-            this.cols = Math.max(8, Math.min(40, parseInt(this.customConfig.cols) || 12));
+            this.rows = Math.max(8, Math.min(64, parseInt(this.customConfig.rows) || 10));
+            this.cols = Math.max(8, Math.min(64, parseInt(this.customConfig.cols) || 12));
             const maxMines = Math.floor(this.rows * this.cols * 0.85);
             this.totalMines = Math.max(1, Math.min(maxMines, parseInt(this.customConfig.mines) || 10));
         } else {
@@ -412,6 +414,8 @@ class MinesweeperGame {
         this.revealedCount = 0;
         this.elapsedTime = 0;
         this.isGuaranteedNoGuess = false;
+        this.noGuessFallback = false;
+        this.noGuessFallbackInfo = null;
         this.lastExplodedCell = null;
 
         for (let r = 0; r < this.rows; r++) {
@@ -420,6 +424,8 @@ class MinesweeperGame {
                 row.push({
                     r,
                     c,
+                    row: r,
+                    col: c,
                     isMine: false,
                     isRevealed: false,
                     isFlagged: false,
@@ -444,11 +450,28 @@ class MinesweeperGame {
             const success = this.generateNoGuessMines(safeR, safeC);
             if (success) {
                 this.isGuaranteedNoGuess = true;
+                this.noGuessFallback = false;
+                this.noGuessFallbackInfo = null;
                 return;
             }
+            // Fallback por fuerzas mayores tras agotar semillas y reparaciones
+            this.isGuaranteedNoGuess = false;
+            this.noGuessFallback = true;
+            const totalCells = this.rows * this.cols;
+            const density = Math.round((this.totalMines / totalCells) * 100);
+            this.noGuessFallbackInfo = {
+                rows: this.rows,
+                cols: this.cols,
+                totalMines: this.totalMines,
+                densityPct: density,
+                reason: `Tras agotar 25 semillas aleatorias y 40 reparaciones de frontera, la densidad elegida (${this.cols}×${this.rows}, ${this.totalMines} minas, ${density}% densidad) requirió conjeturas probabilísticas obligatorias (50/50). El tablero fue generado en modo clásico.`
+            };
+        } else {
+            this.isGuaranteedNoGuess = false;
+            this.noGuessFallback = false;
+            this.noGuessFallbackInfo = null;
         }
         this.generateStandardMines(safeR, safeC);
-        this.isGuaranteedNoGuess = false;
     }
 
     /**
@@ -823,8 +846,10 @@ class MinesweeperGame {
         this.gameState = 'lost';
         this.stopTimer();
         this.lastExplodedCell = explodedCell;
-        explodedCell.exploded = true;
-        explodedCell.isRevealed = true;
+        if (explodedCell) {
+            explodedCell.exploded = true;
+            explodedCell.isRevealed = true;
+        }
 
         // Recolectar minas no marcadas y banderas incorrectas ordenadas por cercanía radial
         const cascadeList = [];
@@ -841,14 +866,20 @@ class MinesweeperGame {
         }
 
         // Ordenar por distancia euclidiana desde la mina inicial para la onda expansiva
+        const expR = (explodedCell && typeof explodedCell.row === 'number') ? explodedCell.row : (explodedCell?.r ?? 0);
+        const expC = (explodedCell && typeof explodedCell.col === 'number') ? explodedCell.col : (explodedCell?.c ?? 0);
         cascadeList.sort((a, b) => {
-            const distA = Math.hypot(a.row - explodedCell.row, a.col - explodedCell.col);
-            const distB = Math.hypot(b.row - explodedCell.row, b.col - explodedCell.col);
+            const ar = (typeof a.row === 'number') ? a.row : (a.r ?? 0);
+            const ac = (typeof a.col === 'number') ? a.col : (a.c ?? 0);
+            const br = (typeof b.row === 'number') ? b.row : (b.r ?? 0);
+            const bc = (typeof b.col === 'number') ? b.col : (b.c ?? 0);
+            const distA = Math.hypot(ar - expR, ac - expC);
+            const distB = Math.hypot(br - expR, bc - expC);
             return distA - distB;
         });
 
         // Revelar inmediatamente la mina que causó la derrota
-        if (this.onCellUpdate) this.onCellUpdate(explodedCell, 0);
+        if (explodedCell && this.onCellUpdate) this.onCellUpdate(explodedCell, 0);
         if (this.onStateChange) this.onStateChange(this.gameState);
         if (this.onLoss) this.onLoss(explodedCell, cascadeList);
     }

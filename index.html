@@ -59,7 +59,8 @@
                     <rect x="23" y="16" width="4" height="30" rx="2" fill="#ffffff" />
                     <path d="M27 16l21 9-21 9V16z" fill="#ef4444" />
                 </svg>
-                <span>Buscaminas Deluxe</span>
+                <span class="brand-text-long">Buscaminas Deluxe</span>
+                <span class="brand-text-short">Buscaminas</span>
             </div>
 
             <!-- Selector de Dificultad Compacto Integrado en la Barra Superior -->
@@ -180,12 +181,15 @@
                     <button id="hud-badge-ng" class="hud-badge-ng"
                         title="Modo No-Guess ACTIVO: 100% resoluble por deducción lógica pura, sin 50/50 (Clic para alternar)"
                         aria-label="Modo No-Guess">
-                        <svg class="hud-badge-icon" viewBox="0 0 24 24" width="13" height="13" fill="none"
-                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            <path d="m9 12 2 2 4-4" />
-                        </svg>
-                        <span class="hud-badge-text">No-Guess</span>
+                        <span id="hud-badge-icon-wrap" class="hud-badge-icon-wrap">
+                            <svg class="hud-badge-icon" viewBox="0 0 24 24" width="13" height="13" fill="none"
+                                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                <path d="m9 12 2 2 4-4" />
+                            </svg>
+                        </span>
+                        <span id="hud-badge-text" class="hud-badge-text">No-Guess</span>
+                        <span id="hud-badge-status-icon" class="hud-badge-status-icon"></span>
                     </button>
 
                     <div class="hud-counter-box" title="Tiempo transcurrido (segundos)">
@@ -205,6 +209,24 @@
             <section id="board-viewport">
                 <div id="board-container">
                     <div id="game-board" role="grid" aria-label="Tablero de Buscaminas"></div>
+                </div>
+
+                <!-- Controles Flotantes de Zoom y Paneo -->
+                <div id="board-zoom-widget" class="board-zoom-widget" role="toolbar" aria-label="Controles de zoom y paneo">
+                    <button type="button" id="zoom-out-btn" class="zoom-btn" title="Alejar (Ctrl + Rueda Abajo / Ctrl -)" aria-label="Alejar">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <button type="button" id="zoom-level-btn" class="zoom-btn zoom-level-display" title="Restablecer zoom a 100% (Ctrl + 0)" aria-label="Restablecer zoom">
+                        <span id="zoom-level-text">100%</span>
+                    </button>
+                    <button type="button" id="zoom-in-btn" class="zoom-btn" title="Acercar (Ctrl + Rueda Arriba / Ctrl +)" aria-label="Acercar">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <button type="button" id="zoom-fit-btn" class="zoom-btn" title="Ajustar tablero al área visible" aria-label="Ajustar tablero a la pantalla">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Mini Menú Emergente de Fin de Partida (Derrota / Victoria) -->
@@ -315,6 +337,47 @@
                     </svg>
                     <span id="reopen-btn-text">Ver Resumen</span>
                 </button>
+
+                <!-- Barra Flotante de Inspección tras Derrota (Explosion UX) -->
+                <div id="loss-inspector-hud" class="loss-inspector-hud hidden" role="toolbar" aria-label="Inspector de derrota">
+                    <div class="loss-hud-content">
+                        <div class="loss-hud-info">
+                            <span class="loss-hud-tag">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                                <span>Detonación</span>
+                            </span>
+                            <span id="loss-hud-coords" class="loss-hud-coords">Fila --, Col --</span>
+                            <span id="loss-hud-accuracy" class="loss-hud-accuracy">Banderas: 0 / 0</span>
+                        </div>
+                        <div class="loss-hud-actions">
+                            <button type="button" id="loss-focus-mine-btn" class="loss-hud-btn" title="Centrar cámara y zoom en la casilla que explotó">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+                                </svg>
+                                <span>Ubicar mina</span>
+                            </button>
+                            <button type="button" id="loss-show-summary-btn" class="loss-hud-btn" title="Ver resumen detallado de la partida (Escape)">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                </svg>
+                                <span>Resumen</span>
+                            </button>
+                            <button type="button" id="loss-retry-btn" class="loss-hud-btn loss-btn-retry" title="Reintentar partida inmediatamente (R o Espacio)">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                                    <path d="M21 3v5h-5" />
+                                </svg>
+                                <span>Reintentar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
@@ -446,35 +509,37 @@
                         data-mines="125">Panorámico (34×18)</button>
                     <button type="button" class="template-chip" data-rows="25" data-cols="25" data-mines="150">Campo
                         Denso (25×25)</button>
+                    <button type="button" class="template-chip template-wr" data-rows="60" data-cols="60"
+                        data-mines="916">Récord Mundial (60×60 · 916)</button>
                 </div>
 
                 <!-- Sliders e Inputs Numéricos Sincronizados -->
                 <div class="custom-inputs-stack">
                     <div class="custom-input-group">
                         <div class="custom-input-header">
-                            <label for="custom-rows">Filas (8 - 36):</label>
-                            <input type="number" id="custom-rows-num" min="8" max="36" value="12"
+                            <label for="custom-rows">Filas (8 - 64):</label>
+                            <input type="number" id="custom-rows-num" min="8" max="64" value="12"
                                 class="custom-num-input">
                         </div>
-                        <input type="range" id="custom-rows" min="8" max="36" value="12">
+                        <input type="range" id="custom-rows" min="8" max="64" value="12">
                     </div>
 
                     <div class="custom-input-group">
                         <div class="custom-input-header">
-                            <label for="custom-cols">Columnas (8 - 42):</label>
-                            <input type="number" id="custom-cols-num" min="8" max="42" value="16"
+                            <label for="custom-cols">Columnas (8 - 64):</label>
+                            <input type="number" id="custom-cols-num" min="8" max="64" value="16"
                                 class="custom-num-input">
                         </div>
-                        <input type="range" id="custom-cols" min="8" max="42" value="16">
+                        <input type="range" id="custom-cols" min="8" max="64" value="16">
                     </div>
 
                     <div class="custom-input-group">
                         <div class="custom-input-header">
                             <label for="custom-mines">Número de Minas:</label>
-                            <input type="number" id="custom-mines-num" min="1" max="350" value="24"
+                            <input type="number" id="custom-mines-num" min="1" max="2500" value="24"
                                 class="custom-num-input">
                         </div>
-                        <input type="range" id="custom-mines" min="1" max="350" value="24">
+                        <input type="range" id="custom-mines" min="1" max="2500" value="24">
                     </div>
                 </div>
 
@@ -516,6 +581,34 @@
                     </div>
                 </div>
 
+                <!-- Tarjeta de Estado No-Guess y Rango Recomendado -->
+                <div class="custom-ng-guidance-card" id="custom-ng-guidance-card">
+                    <div class="custom-ng-header">
+                        <div class="custom-ng-status-group">
+                            <span class="custom-ng-icon-wrap" id="custom-ng-icon-wrap">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    <path d="m9 12 2 2 4-4" />
+                                </svg>
+                            </span>
+                            <span class="custom-ng-title">Modo No-Guess:</span>
+                            <span id="custom-ng-status-badge" class="custom-ng-status-badge ng-active">Activado</span>
+                        </div>
+                        <button type="button" id="custom-ng-toggle-btn" class="custom-ng-toggle-btn" title="Alternar modo No-Guess">
+                            <span id="custom-ng-toggle-text">Desactivar</span>
+                        </button>
+                    </div>
+                    <div class="custom-ng-body">
+                        <div class="custom-ng-advice-row">
+                            <span class="custom-ng-advice-badge advice-optimo" id="custom-ng-advice-badge">Óptimo</span>
+                            <span class="custom-ng-advice-text" id="custom-ng-advice-text">Generación 100% deductiva garantizada al instante.</span>
+                        </div>
+                        <div class="custom-ng-range-hint" id="custom-ng-range-hint">
+                            Rango seguro para este tablero: <strong>1 a 42 minas</strong> (&le; 22.0% de 192 casillas).
+                        </div>
+                    </div>
+                </div>
+
                 <button id="start-custom-btn" class="btn-primary-action">Iniciar Partida Personalizada</button>
             </div>
         </div>
@@ -530,25 +623,107 @@
                 <button class="modal-close" aria-label="Cerrar">&times;</button>
             </div>
             <div class="modal-body">
-                <ul class="help-guide-list">
-                    <li><span class="help-key-badge">No-Guess</span> Tableros certificados 100% resolubles por deducción lógica. Nunca tendrás que jugártela al azar en un 50/50.</li>
-                    <li><span class="help-key-badge">Clic Izquierdo</span> Cava y despeja una casilla. El primer clic
-                        siempre es seguro.</li>
-                    <li><span class="help-key-badge">Clic Derecho / Hold</span> Coloca o quita una bandera para advertir
-                        de una mina.</li>
-                    <li><span class="help-key-badge">Clic en Número</span> Acorde (Chording): Despeja casillas
-                        adyacentes si las banderas ya están colocadas.</li>
-                    <li><span class="help-key-badge"><kbd>Espacio</kbd></span> Alterna Pala / Bandera (o Reinicia la
-                        partida en Derrota/Victoria).</li>
-                    <li><span class="help-key-badge"><kbd>F</kbd></span> Alternar modo Pantalla Completa.</li>
-                    <li><span class="help-key-badge"><kbd>M</kbd></span> Silenciar o activar sonido.</li>
-                    <li><span class="help-key-badge"><kbd>T</kbd></span> Selector rápido de Temas Visuales.</li>
-                    <li><span class="help-key-badge"><kbd>Tab</kbd></span> Abrir o cerrar panel de configuración.</li>
-                    <li><span class="help-key-badge"><kbd>R</kbd></span> Reiniciar partida inmediatamente en cualquier
-                        momento.</li>
-                    <li><span class="help-key-badge"><kbd>Escape</kbd></span> Cerrar menús o inspeccionar el tablero
-                        tras el fin de partida.</li>
-                </ul>
+                <div class="help-section-card touch-card">
+                    <div class="help-section-header">
+                        <svg class="help-sec-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="2" width="14" height="20" rx="3"/>
+                            <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/>
+                        </svg>
+                        <h4>Gestos en Pantalla Táctil (Móvil / Tablet)</h4>
+                    </div>
+                    <ul class="help-guide-list">
+                        <li><span class="help-key-badge touch-badge">Toque</span> Cava y despeja la casilla seleccionada.</li>
+                        <li><span class="help-key-badge touch-badge">Mantener (Hold)</span> Coloca o quita bandera con vibración háptica instantánea.</li>
+                        <li><span class="help-key-badge touch-badge">Arrastrar</span> Desplázate libremente por cualquier parte del tablero.</li>
+                        <li><span class="help-key-badge touch-badge">Pellizcar (Pinch)</span> Aumenta o reduce el zoom con máxima nitidez vectorial.</li>
+                        <li><span class="help-key-badge touch-badge">Doble Toque</span> Re-centra el tablero y ajústalo al área visible.</li>
+                        <li><span class="help-key-badge touch-badge">Botón Pala / Bandera</span> Alterna la acción predeterminada del toque simple.</li>
+                    </ul>
+                </div>
+
+                <div class="help-section-card desktop-card">
+                    <div class="help-section-header">
+                        <svg class="help-sec-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                        <h4>Atajos de Ratón y Teclado (PC)</h4>
+                    </div>
+                    <ul class="help-guide-list">
+                        <li><span class="help-key-badge">No-Guess</span> Tableros certificados 100% resolubles por deducción lógica sin 50/50.</li>
+                        <li><span class="help-key-badge">Clic Izquierdo</span> Cava y despeja una casilla (el primer clic siempre es seguro).</li>
+                        <li><span class="help-key-badge">Clic Derecho / Hold</span> Coloca o quita una bandera para advertir de una mina.</li>
+                        <li><span class="help-key-badge">Clic en Número</span> Acorde (Chording): Despeja casillas adyacentes si las banderas ya concuerdan.</li>
+                        <li><span class="help-key-badge"><kbd>Espacio</kbd></span> Alterna Pala / Bandera (o reinicia tras victoria/derrota).</li>
+                        <li><span class="help-key-badge"><kbd>F</kbd></span> Pantalla completa &nbsp;|&nbsp; <span class="help-key-badge"><kbd>M</kbd></span> Sonido &nbsp;|&nbsp; <span class="help-key-badge"><kbd>T</kbd></span> Temas &nbsp;|&nbsp; <span class="help-key-badge"><kbd>Tab</kbd></span> Ajustes &nbsp;|&nbsp; <span class="help-key-badge"><kbd>R</kbd></span> Reiniciar.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Informativo: Fallback de Modo No-Guess (Desactivado por Fuerzas Mayores) -->
+    <div id="ng-fallback-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="ng-fallback-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-box ng-fallback-modal-box">
+            <div class="modal-header">
+                <h3 id="ng-fallback-title" class="ng-fallback-modal-title">
+                    <svg class="modal-title-svg warning-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    <span>Aviso: Modo No-Guess Desactivado</span>
+                </h3>
+                <button class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="ng-fallback-notice-banner">
+                    <p>El algoritmo de deducción pura no pudo garantizar un tablero 100% libre de adivinanzas (sin 50/50) tras agotar los intentos de optimización. La partida continuó con un <strong>tablero clásico estándar</strong>.</p>
+                </div>
+
+                <div class="ng-fallback-detail-card">
+                    <div class="ng-fallback-row">
+                        <span class="ng-fallback-label">Dimensiones del tablero:</span>
+                        <span id="ng-fallback-dims" class="ng-fallback-value">-- × --</span>
+                    </div>
+                    <div class="ng-fallback-row">
+                        <span class="ng-fallback-label">Minas & Densidad:</span>
+                        <span id="ng-fallback-density" class="ng-fallback-value">-- minas (--%)</span>
+                    </div>
+                    <div class="ng-fallback-row">
+                        <span class="ng-fallback-label">Intentos realizados:</span>
+                        <span class="ng-fallback-value">25 semillas &times; 40 reparaciones de frontera</span>
+                    </div>
+                    <div class="ng-fallback-row vertical">
+                        <span class="ng-fallback-label">Motivo de la desactivación:</span>
+                        <p id="ng-fallback-reason" class="ng-fallback-reason-text">
+                            La densidad extrema o la configuración aleatoria crearon situaciones con bifurcaciones probabilísticas obligatorias donde no existe ninguna deducción lógica determinista posible.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="ng-fallback-recommendations">
+                    <h4>Recomendaciones para No-Guess garantizado:</h4>
+                    <ul>
+                        <li>Mantén la densidad entre <strong>12% y 20%</strong> (zona óptima recomendada: 15% - 18%).</li>
+                        <li>En tableros gigantes (más de 40×40), densidades superiores al 22% provocan islas de ambigüedad casi inevitables.</li>
+                        <li>Puedes pulsar "Reintentar partida" para generar una nueva semilla con la misma configuración.</li>
+                    </ul>
+                </div>
+
+                <div class="modal-actions ng-fallback-actions">
+                    <button type="button" id="ng-fallback-continue-btn" class="btn btn-secondary">
+                        Continuar jugando clásico
+                    </button>
+                    <button type="button" id="ng-fallback-retry-btn" class="btn btn-primary">
+                        Reintentar nueva partida
+                    </button>
+                    <button type="button" id="ng-fallback-customize-btn" class="btn btn-outline">
+                        Ajustar tamaño / densidad
+                    </button>
+                </div>
             </div>
         </div>
     </div>
